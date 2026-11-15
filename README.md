@@ -2,7 +2,7 @@
 
 ES 335 course project.
 
-**Team:** [Name 1, Roll No.], [Name 2, Roll No.]
+**Team:** Lakkamsetti Hasini - 26120004, Shivani Srivastava - 26120009
 
 **Live website:** `https://hasinil2780.github.io/water-potability-screening/` (after you enable GitHub Pages, see below)
 **Repository:** https://github.com/HasiniL2780/water-potability-screening
