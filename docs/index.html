@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Screening Water Samples for Potability: A Baseline-Driven Classification Study</title>
+  <meta name="description" content="How well can machine-learning models predict the recorded potability label of water samples, compared with a majority-class baseline, and how does that change across three feature-availability scenarios?">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="hero">
+  <div class="wrap hero-wrap">
+    <img class="hero-logo" src="assets/logo.svg" alt="Water Potability Study logo" width="96" height="96">
+    <h1>Screening Water Samples for Potability</h1>
+    <p class="lede">How well can machine-learning models predict the <em>recorded</em> potability label from measured water parameters, and how does that change as fewer measurements are available?</p>
+    <p class="notice" role="note"><strong>Experimental research.</strong> Everything here describes one public dataset. A model output is an experimental screening result and does <strong>not</strong> certify that water is safe to drink.</p>
+    <p class="hero-actions"><a class="btn primary" id="repo-btn" href="https://github.com/HasiniL2780/water-potability-screening" rel="noopener">View code on GitHub</a></p>
+    <div id="hero-stats" class="hero-stats" aria-live="polite"></div>
+  </div>
+</header>
+
+<nav class="topnav" aria-label="Sections">
+  <ul class="wrap">
+    <li><a href="#question">Question</a></li>
+    <li><a href="#data">Data</a></li>
+    <li><a href="#preprocessing">Preprocessing</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#evaluation">Evaluation</a></li>
+    <li><a href="#settings">Settings</a></li>
+    <li><a href="#results">Results</a></li>
+    <li><a href="#errors">Errors</a></li>
+    <li><a href="#conclusions">Conclusions</a></li>
+    <li><a href="#limitations">Limitations</a></li>
+    <li><a href="#reproducibility">Reproducibility</a></li>
+  </ul>
+</nav>
+
+<main id="main" class="wrap">
+
+  <div id="load-error" class="banner banner-error" role="alert" hidden>
+    <strong>The results could not be loaded.</strong> <span id="load-error-detail"></span>
+    Open this page through a web server (for example <code>python -m http.server</code> inside the <code>docs</code> folder, then visit <code>http://localhost:8000</code>) or check the published link. If <code>results.json</code> does not exist yet, run the notebook first.
+  </div>
+  <noscript><div class="banner banner-error">This page needs JavaScript to show the results.</div></noscript>
+
+  <!-- ============ PROBLEM ============ -->
+  <section id="question" aria-labelledby="h-problem">
+    <h2 id="h-problem">The question</h2>
+    <p class="lead-q"><strong>Research question.</strong> Using the measured physicochemical parameters in the Water Potability dataset, how well can machine-learning models predict the recorded potability label, and how does performance change across three hypothetical feature-availability scenarios, compared with a majority-class baseline?</p>
+
+    <div class="panel"><h3 style="margin-top:0">What one row of the data is</h3>
+      <p>One row is <strong>one water sample</strong>: nine measured physicochemical values (pH, hardness, solids, chloramines, sulfate, conductivity, organic carbon, trihalomethanes, turbidity) and one recorded label, <code>Potability</code> (1 = potable, 0 = not potable). The task is to predict that label from the measurements.</p>
+      <p><strong>At prediction time</strong> a model knows only the measurements of its scenario (3, 6 or 9 values); the label is what it predicts. <strong>Limit of the claim:</strong> we predict the <em>recorded</em> label in this one dataset, not whether water is actually safe.</p></div>
+    <h3>Three feature-availability scenarios</h3>
+    <div class="scenario-diagram" id="scenario-diagram" aria-label="The three feature scenarios"></div>
+
+    <div class="two-col">
+      <div class="panel">
+        <h3>Why these metrics</h3>
+        <p>About <span data-fill="class0_pct">&hellip;</span> of the samples are labelled non-potable, so always answering <em>non-potable</em> is right most of the time without looking at any measurement. That is the <strong>baseline</strong>.</p>
+        <p>A <strong>false &ldquo;potable&rdquo;</strong> (a non-potable sample predicted potable) is the costlier mistake. We therefore report <strong>non-potable recall</strong> and the <strong>share of &ldquo;potable&rdquo; calls that are actually non-potable</strong>.</p>
+        <p><strong>Recall alone misleads:</strong> the baseline scores <span data-fill="baseline_recall_np">&hellip;</span> non-potable recall by flagging everything, yet it never clears a single potable sample. So recall is always read next to precision, balanced accuracy and average precision, and next to the baseline.</p>
+      </div>
+      <div class="panel">
+        <h3>What this is, and is not</h3>
+        <p>The <strong>main study</strong> compares logistic regression, a decision tree and a random forest with the baseline across scenarios A, B and C. The explorers below let you inspect each model, scenario and decision threshold.</p>
+        <p>We do <strong>not</strong> claim a sample predicted &ldquo;potable&rdquo; is safe to drink. See <a href="#limitations">Limitations</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DATA ============ -->
+  <section id="data" aria-labelledby="h-data">
+    <h2 id="h-data">The data</h2>
+    <p><strong>Source:</strong> Kaggle &ldquo;Water Potability&rdquo; (Kadiwal, see footer), one CSV. <strong>Size:</strong> <span data-fill="n_rows">&hellip;</span> rows, <span data-fill="n_features">&hellip;</span> features plus the label. <strong>Licence:</strong> CC0, public domain (as listed on the Kaggle page). The CSV is included in the repository at <code>data/water_potability.csv</code>; steps to re-download it are in <a href="#reproducibility">Reproducibility</a>.</p>
+    <div id="data-summary" class="stat-row" aria-live="polite"></div>
+    <h3>Key variables</h3>
+    <div class="table-wrap" id="var-table"></div>
+    <h3>Data-quality issues</h3>
+    <ul class="limits">
+      <li><strong>Missing values</strong> in three features: pH, Sulfate and Trihalomethanes (counts above). The other six are complete.</li>
+      <li><strong>Class imbalance:</strong> about <span data-fill="class0_pct">&hellip;</span> of samples are non-potable, so a model that always says &ldquo;non-potable&rdquo; already looks decent (the baseline).</li>
+      <li><strong>Heavy class overlap:</strong> for every feature the two classes have almost the same distribution and mean (table above), a warning sign that the label is hard to predict from these measurements.</li>
+      <li><strong>Synthetic source:</strong> Kaggle&rsquo;s metadata lists the provenance as &ldquo;Synthetically generated&rdquo;; where the values came from and how the label was assigned is not documented. Results describe this dataset, not real water samples.</li>
+    </ul>
+    <div class="figure-grid">
+      <figure class="figure">
+        <img src="assets/class_balance.png" alt="Bar chart of samples labelled not potable and potable; not potable is the larger group." loading="lazy">
+        <figcaption>Class balance.</figcaption>
+      </figure>
+      <figure class="figure">
+        <img src="assets/missingness.png" alt="Bar chart of the percentage of missing values per feature; only pH, Sulfate and Trihalomethanes have any." loading="lazy">
+        <figcaption>Missing values by feature.</figcaption>
+      </figure>
+    </div>
+    <details>
+      <summary>Feature distributions by class</summary>
+      <figure class="figure">
+        <img src="assets/feature_distributions.png" alt="Nine small histograms comparing not-potable and potable samples; the distributions overlap heavily for every feature." loading="lazy">
+        <figcaption>The classes overlap heavily for every feature. (Descriptive only; no modelling choice used this plot.)</figcaption>
+      </figure>
+    </details>
+  </section>
+
+  <!-- ============ PREPROCESSING ============ -->
+  <section id="preprocessing" aria-labelledby="h-pre">
+    <h2 id="h-pre">Preprocessing, and why</h2>
+    <div class="card-grid">
+      <article class="card"><h4>1. Select the scenario&rsquo;s columns</h4><p>Each model sees only the features of its scenario (A: 3, B: 6, C: 9). <em>Why:</em> the question is how performance changes as fewer measurements are available.</p></article>
+      <article class="card"><h4>2. Median imputation</h4><p>Missing pH, Sulfate and Trihalomethanes are replaced by the training median. <em>Why:</em> the median is not pulled by extreme values and keeps every row (dropping rows would lose up to a quarter of the data).</p></article>
+      <article class="card"><h4>3. Missing-value indicator (optional)</h4><p>An extra 0/1 column says &ldquo;this value was missing&rdquo;. <em>Why:</em> imputation hides missingness, which could itself carry signal. It is kept only where cross-validation shows a gain larger than its standard error.</p></article>
+      <article class="card"><h4>4. Scaling (logistic regression only)</h4><p>Standardise to mean 0, spread 1. <em>Why:</em> logistic regression is sensitive to feature scale; trees are not, so they get raw values.</p></article>
+    </div>
+    <p class="note"><strong>No leakage:</strong> imputation and scaling are fitted <em>inside each training fold</em> through a scikit-learn Pipeline, and the test set is transformed with training statistics only. Missing counts and class balance were computed on the whole file for description only; no choice depended on them.</p>
+  </section>
+
+  <!-- ============ MODELS ============ -->
+  <section id="models" aria-labelledby="h-models">
+    <h2 id="h-models">Baseline and models compared</h2>
+    <div class="card-grid">
+      <article class="card card-base">
+        <h4>Baseline: majority class</h4>
+        <p>Always predicts non-potable. Defines &ldquo;no skill&rdquo;.</p>
+        <p class="note" id="baseline-facts" aria-live="polite">Loading&hellip;</p>
+      </article>
+      <article class="card"><h4>Logistic regression</h4><p><strong>Idea:</strong> a weighted sum of the scaled measurements becomes a probability. <strong>Assumes</strong> straight-line effects. Fast, hard to overfit.</p></article>
+      <article class="card"><h4>Decision tree</h4><p><strong>Idea:</strong> a chain of if/then questions on the measurements. <strong>Assumes</strong> simple thresholds. Readable but unstable.</p></article>
+      <article class="card"><h4>Random forest</h4><p><strong>Idea:</strong> many trees on random resamples, votes averaged. <strong>Assumes</strong> the same as trees but steadier. Strongest, but prone to overfit.</p></article>
+    </div>
+    <p class="note"><strong>Choosing the final model per scenario:</strong> highest mean cross-validation average precision; a simpler model is preferred if it is within one standard error of the best. All three families run in all three scenarios.</p>
+  </section>
+
+  <!-- ============ EVALUATION ============ -->
+  <section id="evaluation" aria-labelledby="h-eval">
+    <h2 id="h-eval">How the models were evaluated</h2>
+    <div id="split-diagram" class="split" aria-live="polite"></div>
+    <p class="note">Stratified split (class shares preserved), random seed <span data-fill="seed">&hellip;</span>. The <strong>test set</strong> scores the final models. Settings, class weights and thresholds are chosen with <strong><span data-fill="cv_folds">&hellip;</span>-fold stratified cross-validation on the training part only</strong>, with identical folds for every scenario and model.</p>
+    <div class="table-wrap"><table class="text-table">
+      <thead><tr><th>Metric</th><th>What it answers</th><th>Why we use it</th></tr></thead>
+      <tbody>
+        <tr><td>Average precision (non-potable = positive)</td><td>How well the probability ranks non-potable above potable samples, across all thresholds</td><td>Threshold-free; the baseline equals the non-potable share (about <span data-fill="class0_pct">&hellip;</span>). Used to select models.</td></tr>
+        <tr><td>Balanced accuracy</td><td>Average of recall on each class</td><td>Always-&ldquo;non-potable&rdquo; scores exactly 0.50, so it exposes no-skill models that plain accuracy rewards.</td></tr>
+        <tr><td>Non-potable recall</td><td>Of truly non-potable samples, the share flagged</td><td>Missing one is the costly error. Alone it misleads: the baseline scores <span data-fill="baseline_recall_np">&hellip;</span>.</td></tr>
+        <tr><td>Wrong &ldquo;potable&rdquo; share</td><td>Of &ldquo;potable&rdquo; calls, the share that are actually non-potable</td><td>Shows how far a &ldquo;potable&rdquo; call can be trusted. Not defined for the baseline, which never says potable.</td></tr>
+        <tr><td>Accuracy</td><td>Share of correct calls</td><td>Secondary only; it flatters the baseline.</td></tr>
+      </tbody></table></div>
+    <p class="note">Uncertainty: <span data-fill="n_boot">&hellip;</span> paired bootstrap resamples of the test rows give 95% intervals; differences are computed on identical resamples. An interval that includes 0 means the data cannot tell the two apart.</p>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="settings" aria-labelledby="h-exp">
+    <h2 id="h-exp">How the settings were chosen</h2>
+    <p>Every setting was chosen by 5-fold cross-validation on the training part only; the test set was not used. Settings with the best cross-validation score were preferred, then the smallest gap between training and validation scores. Class weights and missing-value flags were kept only where cross-validation showed a clear gain, and thresholds were fixed on training predictions and applied once to the test set.</p>
+    <h3>Chosen settings</h3>
+    <div class="table-wrap" id="settings-table"></div>
+    <h3>The evidence behind them</h3>
+    <p class="note">Pick a topic and a scenario.</p>
+    <div class="tabs" role="group" aria-label="Choose a topic">
+      <button type="button" class="tab" data-action="exp" data-value="rf" aria-pressed="true">Tree depth and leaf size</button>
+      <button type="button" class="tab" data-action="exp" data-value="cw" aria-pressed="false">Class weights</button>
+      <button type="button" class="tab" data-action="exp" data-value="thr" aria-pressed="false">Decision threshold</button>
+      <button type="button" class="tab" data-action="exp" data-value="ind" aria-pressed="false">Missing-value flags</button>
+      <button type="button" class="tab" data-action="exp" data-value="pr" aria-pressed="false">Precision vs recall</button>
+    </div>
+    <div class="control-group exp-scen" role="group" aria-label="Choose a scenario">
+      <span class="control-label">Scenario</span>
+      <button type="button" class="seg" data-action="scenario" data-value="A" aria-pressed="true">A</button>
+      <button type="button" class="seg" data-action="scenario" data-value="B" aria-pressed="false">B</button>
+      <button type="button" class="seg" data-action="scenario" data-value="C" aria-pressed="false">C</button>
+    </div>
+    <div id="exp-panel" class="exp-panel" aria-live="polite"><p class="muted">Loading&hellip;</p></div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="results" aria-labelledby="h-results">
+    <h2 id="h-results">Results on the held-out test set</h2>
+    <p class="final-note" id="final-note"></p>
+    <p>Choose a scenario and a model. Scenarios are <em>experimental feature subsets</em>, not validated testing procedures. Default threshold 0.5.</p>
+
+    <div class="controls">
+      <div class="control-group" role="group" aria-label="Choose a scenario">
+        <span class="control-label">Scenario</span>
+        <button type="button" class="seg" data-action="scenario" data-value="A" aria-pressed="true">A</button>
+        <button type="button" class="seg" data-action="scenario" data-value="B" aria-pressed="false">B</button>
+        <button type="button" class="seg" data-action="scenario" data-value="C" aria-pressed="false">C</button>
+      </div>
+      <div class="control-group" role="group" aria-label="Choose a model">
+        <span class="control-label">Model</span>
+        <button type="button" class="seg" data-action="model" data-value="baseline" aria-pressed="false">Baseline</button>
+        <button type="button" class="seg" data-action="model" data-value="logreg" aria-pressed="false">Logistic regression</button>
+        <button type="button" class="seg" data-action="model" data-value="tree" aria-pressed="false">Decision tree</button>
+        <button type="button" class="seg" data-action="model" data-value="forest" aria-pressed="false">Random forest</button>
+        <button type="button" class="linkish" data-action="model-reset" id="model-reset" hidden>Back to the final model</button>
+      </div>
+    </div>
+
+    <div id="results-panel" aria-live="polite"><p class="muted">Loading results&hellip;</p></div>
+
+    <h3>Compare scenarios and models</h3>
+    <div class="control-group" role="group" aria-label="Choose a metric for the comparison chart">
+      <span class="control-label">Metric</span>
+      <button type="button" class="seg" data-action="metric" data-value="balanced_accuracy" aria-pressed="true">Balanced accuracy</button>
+      <button type="button" class="seg" data-action="metric" data-value="ap_np" aria-pressed="false">Average precision</button>
+      <button type="button" class="seg" data-action="metric" data-value="recall_np" aria-pressed="false">Non-potable recall</button>
+      <button type="button" class="seg" data-action="metric" data-value="false_potable_share" aria-pressed="false">Wrong &ldquo;potable&rdquo; share</button>
+      <button type="button" class="seg" data-action="metric" data-value="recall_p" aria-pressed="false">Potable recall</button>
+    </div>
+    <div id="compare-chart" class="chart-box" aria-live="polite"></div>
+
+    <h3>Move the decision threshold</h3>
+    <div class="panel"><p class="note" style="margin-top:0">A model outputs a probability; the threshold decides which samples are called non-potable. Drag to see the trade-off for the selected scenario&rsquo;s final model (training out-of-fold predictions, so the test set is not touched).</p>
+      <label for="thr-slider"><strong>Threshold</strong></label><input id="thr-slider" type="range" min="0" max="90" value="45"><div id="thr-out" class="kpis"></div></div>
+  </section>
+
+  <!-- ============ ERRORS ============ -->
+  <section id="errors" aria-labelledby="h-errors">
+    <h2 id="h-errors">Errors</h2>
+    <p>Each dot is one test sample (final model, threshold 0.5). The costly error is a <strong>false &ldquo;potable&rdquo;</strong>: a non-potable sample called potable.</p>
+    <div id="errors-panel" aria-live="polite"><p class="muted">Loading&hellip;</p></div>
+  </section>
+
+  <!-- ============ CONCLUSIONS ============ -->
+  <section id="conclusions" aria-labelledby="h-concl">
+    <h2 id="h-concl">Conclusions</h2>
+    <div id="conclusions-panel" aria-live="polite"><p class="muted">Loading&hellip;</p></div>
+  </section>
+
+  <!-- ============ LIMITATIONS ============ -->
+  <section id="limitations" aria-labelledby="h-limitations">
+    <h2 id="h-limitations">Limitations</h2>
+    <ul class="limits">
+      <li>We do <strong>not</strong> claim that a sample predicted &ldquo;potable&rdquo; is safe to drink. The data has no microbial or heavy-metal measurements and the origin of the label is unclear.</li>
+      <li>Results show <strong>association, not cause</strong>. Feature importance or model weights would not prove that any measurement causes potability, and we do not read them that way.</li>
+      <li>The scenarios are <strong>experimental feature subsets</strong>, not validated testing procedures. The A/B grouping is our assumption, not a property of the data.</li>
+      <li>Results must <strong>not be generalised to Indian rivers</strong> or any specific region.</li>
+      <li>One split and one random seed. Bootstrap intervals describe uncertainty from the finite test set only, not from choosing settings on one training split.</li>
+      <li>Settings were chosen by cross-validation on the training part only and tuning was staged (structure, then class weights, then indicators), so cross-validation scores of tuned settings are slightly optimistic. Cross-validation and test scores agree closely.</li>
+      <li>The data are described by Kaggle as synthetically generated, so the findings concern this dataset and say little about real water samples.</li>
+    </ul>
+  </section>
+
+  <!-- ============ REPRODUCIBILITY ============ -->
+  <section id="reproducibility" aria-labelledby="h-repro">
+    <h2 id="h-repro">Reproducibility</h2>
+    <p id="repo-line"><a class="btn primary" href="https://github.com/HasiniL2780/water-potability-screening" rel="noopener">View code on GitHub</a> &nbsp;Notebook, exact splits, preprocessing, full results and the README with setup steps.</p>
+    <p>Everything on this page is read from <code>results.json</code>, written by <code>notebooks/water_potability.ipynb</code>. No number is typed in by hand.</p>
+    <ol>
+      <li>The CSV is already in <code>data/water_potability.csv</code> (CC0). If it is missing, download <code>water_potability.csv</code> from Kaggle into <code>data/</code>.</li>
+      <li>Create a virtual environment and run <code>pip install -r requirements.txt</code>.</li>
+      <li>Run <code>jupyter nbconvert --to notebook --execute --inplace notebooks/water_potability.ipynb</code>.</li>
+      <li>Preview with <code>python -m http.server</code> inside <code>docs/</code>.</li>
+    </ol>
+    <div id="repro-meta" class="stat-row" aria-live="polite"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p><strong>Dataset.</strong> Kadiwal, A. <em>Water Potability</em> [dataset]. Kaggle. <a href="https://www.kaggle.com/datasets/adityakadiwal/water-potability" rel="noopener">https://www.kaggle.com/datasets/adityakadiwal/water-potability</a>. Licence: CC0, public domain.</p>
+  </div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

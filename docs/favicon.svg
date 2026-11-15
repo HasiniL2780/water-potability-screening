@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Water Potability Study logo: a water drop containing three rising bars">
+  <defs>
+    <linearGradient id="wp-g" x1="14" y1="6" x2="50" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#2AA9CC"/>
+      <stop offset="1" stop-color="#0E6E8E"/>
+    </linearGradient>
+  </defs>
+  <path d="M32 3 C32 3 11 26.5 11 41 C11 52.6 20.4 61 32 61 C43.6 61 53 52.6 53 41 C53 26.5 32 3 32 3 Z" fill="url(#wp-g)"/>
+  <rect x="20.5" y="40" width="7.5" height="12" rx="1.8" fill="#fff"/>
+  <rect x="28.5" y="32" width="7.5" height="20" rx="1.8" fill="#fff"/>
+  <rect x="36.5" y="22" width="7.5" height="30" rx="1.8" fill="#fff"/>
+</svg>
