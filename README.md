@@ -54,8 +54,7 @@ Kaggle "Water Potability" (Kadiwal, A.), https://www.kaggle.com/datasets/adityak
 - **The results are weak.** Accuracy is below the baseline in A and B. Even in C, 43% of "potable" calls are wrong. Logistic regression stays at the baseline. The classes overlap heavily for every feature, which tuning cannot fix.
 - Moving the threshold trades one error for the other: the 90%-recall rule catches about 90% of non-potable samples but wrongly flags 242, 215 and 174 potable samples (A, B, C).
 
-Evaluation note: all model and threshold selection used cross-validation on the training part only. The hold-out test set was evaluated once after the model choices and thresholds were fixed; bootstrap intervals and other test-set summaries reuse those saved predictions. Cross-validation and test scores agree closely.
-
+Evaluation note: all model and threshold selection used cross-validation on the training part only. In the final notebook, the hold-out test set is scored once after all choices are fixed, and the bootstrap intervals and other test-set summaries reuse those saved predictions. The project was developed iteratively, so treat the test scores as approximate. Cross-validation and test scores agree closely.
 ## Repository layout
 
 ```
