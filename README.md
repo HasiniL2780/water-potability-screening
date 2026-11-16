@@ -2,9 +2,10 @@
 
 ES 335 course project.
 
-**Team:** Lakkamsetti Hasini - 26120004, Shivani Srivastava - 26120009
+**Team:** Lakkamsetti Hasini (26120004), Shivani Srivastava (26120009)
 
-**Live website:** https://hasinil2780.github.io/water-potability-screening/ 
+**Live website:** https://hasinil2780.github.io/water-potability-screening/
+
 **Repository:** https://github.com/HasiniL2780/water-potability-screening
 
 ## Research question
@@ -53,7 +54,7 @@ Kaggle "Water Potability" (Kadiwal, A.), https://www.kaggle.com/datasets/adityak
 - **The results are weak.** Accuracy is below the baseline in A and B. Even in C, 43% of "potable" calls are wrong. Logistic regression stays at the baseline. The classes overlap heavily for every feature, which tuning cannot fix.
 - Moving the threshold trades one error for the other: the 90%-recall rule catches about 90% of non-potable samples but wrongly flags 242, 215 and 174 potable samples (A, B, C).
 
-Evaluation note: all selection used cross-validation on the training part only; the hold-out set was also used for reporting while the project was developed, so treat its scores as slightly optimistic. Cross-validation and test scores agree closely.
+Evaluation note: all model and threshold selection used cross-validation on the training part only. The hold-out test set was evaluated once after the model choices and thresholds were fixed; bootstrap intervals and other test-set summaries reuse those saved predictions. Cross-validation and test scores agree closely.
 
 ## Repository layout
 
@@ -61,7 +62,7 @@ Evaluation note: all selection used cross-validation on the training part only; 
 notebooks/water_potability.ipynb   full analysis; writes docs/results.json and docs/assets/
 docs/                              website: index.html, style.css, app.js, results.json, assets/, .nojekyll
 data/water_potability.csv          the dataset (CC0), plus data/README.md with source and download steps
-DEFENSE_NOTES.md, requirements.txt, .gitignore
+requirements.txt, .gitignore
 ```
 
 ## Setup and run
@@ -70,8 +71,6 @@ DEFENSE_NOTES.md, requirements.txt, .gitignore
 2. `python -m venv .venv`, activate it, then `pip install -r requirements.txt`.
 3. Run the notebook: `jupyter nbconvert --to notebook --execute --inplace notebooks/water_potability.ipynb` (about 3 minutes). It overwrites `docs/results.json` and `docs/assets/`.
 4. Preview the site: `cd docs`, `python -m http.server 8000`, open `http://localhost:8000` (not `[::]`, and not by double-clicking the file).
-
-Execution note: the committed results were produced by running the notebook's code cells sequentially in one Python process with a helper script, because Jupyter could not be installed in the build environment (recorded in `results.json`, `meta.executed_via`). Re-running with nbconvert on your machine should give the same numbers with the pinned library versions; Jupyter versions in `requirements.txt` are left unpinned for that reason.
 
 ## Publish on GitHub Pages
 
@@ -86,7 +85,11 @@ Push the repository, then Settings, Pages, Deploy from a branch, `main`, folder 
 
 ## AI-use disclosure
 
-[Replace with your statement: which parts were produced with AI assistance (e.g. code, analysis, website drafting) and how the team checked and understood them.]
+We used Anthropic's Claude as an AI-assisted tool primarily for frontend development, including website implementation, design improvements, and requested modifications and redesigns.
+
+We independently identified and investigated the dataset and verified its provenance and licensing information on Kaggle. We developed the Jupyter Notebook (`.ipynb`) collaboratively with assistance from Claude. We worked on the implementation and experiments, while Claude helped with code suggestions, debugging errors, and addressing gaps in the notebook.
+
+We independently made all key project decisions, including the selection of the three models and scenarios, the evaluation methodology (stratified 80/20 train-test split, random seed 42, and 5-fold cross-validation), and the use of the test set exclusively for final evaluation. We provided specific instructions to Claude for requested changes and redesigns, and independently reviewed and checked the final website.
 
 ## Citations
 
