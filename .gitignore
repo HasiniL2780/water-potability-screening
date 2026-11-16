@@ -1,0 +1,20 @@
+# Dataset is CC0 and is committed
+# Secrets
+kaggle.json
+.kaggle/
+.env
+
+# Python / Jupyter
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+*.failed.ipynb
+*.smoke.ipynb
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
