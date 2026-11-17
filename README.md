@@ -66,7 +66,7 @@ requirements.txt, .gitignore
 
 ## Setup and run
 
-1. Data: `data/water_potability.csv` is included (CC0). If it is missing, download it from Kaggle into `data/`.
+1. Data: `data/water_potability.csv` is included (CC0). If it is missing, download it from Kaggle https://www.kaggle.com/datasets/adityakadiwal/water-potability into `data/`.
 2. `python -m venv .venv`, activate it, then `pip install -r requirements.txt`.
 3. Run the notebook: `jupyter nbconvert --to notebook --execute --inplace notebooks/water_potability.ipynb` (about 3 minutes). It overwrites `docs/results.json` and `docs/assets/`.
 4. Preview the site: `cd docs`, `python -m http.server 8000`, open `http://localhost:8000` (not `[::]`, and not by double-clicking the file).
