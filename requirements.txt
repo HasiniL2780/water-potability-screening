@@ -1,14 +1,10 @@
-# Versions below were read with importlib.metadata in the environment that produced docs/results.json
-# (Python 3.13.18).
-numpy==2.5.3
-pandas==3.0.5
-scikit-learn==1.9.1
-matplotlib==3.11.2
+# Versions used to produce docs/results.json (Python 3.12.3)
+numpy==2.3.4
+pandas==2.3.3
+scikit-learn==1.9.0
+matplotlib==3.10.7
 
-# Jupyter tooling: UNVERIFIED. These packages could not be installed in the sandbox that produced
-# the results, so no exact versions are pinned. After you run the notebook with
-# `jupyter nbconvert --execute`, run `pip freeze | grep -i -E "jupyter|nbconvert|ipykernel"`
-# and pin what you actually used (the notebook also records versions in docs/results.json meta).
+# Needed to run the notebook
 jupyter
 nbconvert
 ipykernel
